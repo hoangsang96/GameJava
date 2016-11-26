@@ -1,0 +1,18 @@
+package view;
+
+import java.util.List;
+
+import model.GameButton;
+
+public interface IGameView {
+	
+	int EASY_TIME = 10;
+	int MEDIUM_TIME = 5;
+	int HARD_TIME = 3;
+	
+	void initView();
+	
+	void setNewGame(List<GameButton> buttonList);
+	
+	void notifySetChange();
+}

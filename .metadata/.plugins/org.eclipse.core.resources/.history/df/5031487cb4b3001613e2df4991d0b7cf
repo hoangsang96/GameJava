@@ -1,0 +1,13 @@
+package view;
+
+import java.util.List;
+
+import model.GameButton;
+
+public interface IGameView {
+	void initView();
+	
+	void setNewGame(List<GameButton> buttonList);
+	
+	void startGame();
+}

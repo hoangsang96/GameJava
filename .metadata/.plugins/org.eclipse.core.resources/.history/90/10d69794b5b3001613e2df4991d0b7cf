@@ -1,0 +1,16 @@
+package view;
+
+import java.util.List;
+
+import model.GameButton;
+
+public interface IGameView {
+	
+	Status statusOfGame = Status.START;
+	
+	void initView();
+	
+	void setNewGame(List<GameButton> buttonList);
+	
+	void notifySetChange();
+}

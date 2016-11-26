@@ -1,0 +1,5 @@
+package view;
+
+public enum Status {
+	NEW_GAME, START, PAUSE, STOP, AUTOPLAY, CHEAT;
+}

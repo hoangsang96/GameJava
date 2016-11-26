@@ -7,11 +7,16 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ContainerEvent;
+import java.awt.event.ContainerListener;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -25,6 +30,8 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
+import base.MyCallBack;
+import model.GameButton;
 import presenter.GamePresenter;
 import presenter.IGamePresenter;
 
@@ -44,7 +51,6 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 	// button
 	List<JButton> mListButton;
 	
-	
 	// action command;
 	private final String NEW_GAME = "NEW_GAME";
 	private final String LEVEL_EASY = "LEVEL_EASY";
@@ -56,10 +62,21 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 	private final String CHEAT = "CHEAT";
 	private final String AUTO_PLAY = "AUTO_PLAY";
 
+	// status of game
+	public static Status STATUS;
+	public static int currentTime;
+	public static int LEVEL;
+	public static int InGame = 0;
+
+	//timer
+	Timer timer;
+	TimerTask task;
+	
 	public GameView(GamePresenter controller) {
 		// TODO Auto-generated constructor stub
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		this.mController = controller;
+		
 		
 		initView();
 	}
@@ -196,16 +213,19 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 				@Override
 				public void propertyChange(PropertyChangeEvent evt) {
 					// TODO Auto-generated method stub
-					if ("border".equals(evt.getPropertyName())) throw new RuntimeException();
+//					if ("border".equals(evt.getPropertyName())) throw new RuntimeException();
 				}
 			});
-			
 			mPanelBoardGame.setLayout(new GridLayout(10,  10));
+			
 		}
 		mContaint.add(mPanelBoardGame, BorderLayout.CENTER);
 		
 		//==== status==========
-		mLabelStatus.setText("Time: 00:00:00");
+		currentTime = HARD_TIME;
+		LEVEL = HARD_TIME;
+		setTime(currentTime);
+		
 		mContaint.add(mLabelStatus, BorderLayout.SOUTH);
 		pack();
 		setLocationRelativeTo(getOwner());
@@ -213,12 +233,9 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 	}
 
 	@Override
-	public void setNewGame(List<Integer> solutionList) {
+	public void setNewGame(List<GameButton> buttonList) {
 		// TODO Auto-generated method stub
-		for (Integer solution : solutionList){
-			JButton button = new JButton(String.valueOf(solution));
-			button.setForeground(Color.BLUE);
-			button.setBackground(Color.BLUE);
+		for (GameButton button : buttonList){
 			mPanelBoardGame.add(button);
 		}
 		mPanelBoardGame.validate();
@@ -229,15 +246,99 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 		// TODO Auto-generated method stub
 		switch (e.getActionCommand()) {
 		case NEW_GAME:
+			STATUS = Status.NEW_GAME;
 			mPanelBoardGame.removeAll();
 			mController.setNewGame(10);
 			break;
+		case PAUSE:
+			if (STATUS == Status.PAUSE)
+				STATUS = Status.PLAYING;
+			else
+				STATUS = Status.PAUSE;
 			
-		case LEVEL_EASY:
+			mController.pauseGame();
+			break;
+		case CHEAT:
+			mController.cheat(COMPUTER);
 			break;
 			
+		case AUTO_PLAY:
+			mController.autoPlay();
+			break;
+		
+		case LEVEL_EASY:
+			LEVEL = EASY_TIME;
+			currentTime = EASY_TIME;
+			break;
+		
+		case LEVEL_MEDIUM:
+			LEVEL = MEDIUM_TIME;
+			currentTime = MEDIUM_TIME;
+			break;
+		
+		case LEVEL_HARD:
+			LEVEL = HARD_TIME;
+			currentTime = HARD_TIME;
+			break;
+		case EXIT:
+			System.exit(0);
 		default:
 			break;
 		}
+	}
+
+	@Override
+	public void notifySetChange() {
+		// TODO Auto-generated method stub
+		mPanelBoardGame.validate();
+	}
+
+	@Override
+	public void setTime(int level) {
+		// TODO Auto-generated method stub
+		if (level == EASY_TIME)
+			mLabelStatus.setText("Second: " + level);
+		else
+			mLabelStatus.setText("Second: 0" + level);
+		
+		task = new TimerTask() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				currentTime--;
+				mLabelStatus.setText("Second: 0" + currentTime);
+				
+				if (currentTime == 0){
+					mController.cheat(COMPUTER);
+					resetTimer(level);
+				}
+			}
+		};
+	}
+
+	@Override
+	public void resumeTimer() {
+		// TODO Auto-generated method stub
+		timer = new Timer();
+		timer.schedule(task, 1000, 1000);
+		
+	}
+
+	@Override
+	public void pauseTimer() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void resetTimer(int level) {
+		// TODO Auto-generated method stub
+		if (timer != null){
+			timer.cancel();
+		}
+		currentTime = level;
+		setTime(level);
+		resumeTimer();
 	}
 }
