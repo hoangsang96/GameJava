@@ -1,0 +1,14 @@
+package presenter;
+
+public interface IGamePresenter {
+	void setNewGame(int level);
+	
+	void startGame();
+	
+	void pauseGame();
+	
+	void skip(boolean isUser);
+	
+	void autoPlay();
+	
+}

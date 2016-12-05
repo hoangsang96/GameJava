@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring accessors="true" comment="Delete 2 elements from project &apos;GameJava&apos;&#x0A;- Original project: &apos;GameJava&apos;&#x0A;- Original elements:&#x0A;     Correct-answer.wma&#x0A;     Wrong-answer-sound-effect.wma" description="Delete elements" element1="src/res/Wrong-answer-sound-effect.wma" element2="src/res/Correct-answer.wma" elements="0" flags="589830" id="org.eclipse.jdt.ui.delete" resources="2" stamp="1480255845433" subPackages="false" version="1.0"/>
+</session>

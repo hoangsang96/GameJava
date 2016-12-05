@@ -1,10 +1,16 @@
 package view;
 
+import java.applet.Applet;
+import java.applet.AudioClip;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Font;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ContainerEvent;
@@ -17,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -24,8 +31,10 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
+import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -37,7 +46,7 @@ import presenter.IGamePresenter;
 
 public class GameView extends JFrame implements IGameView, ActionListener{
 
-	IGamePresenter mController;
+	IGamePresenter mPresenter;
 	
 	// view
 	JMenuBar mMenuBar;
@@ -47,7 +56,7 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 	JMenuItem mItemCheat, mItemAutoPlay, mItemExit, mItemAbout;
 	JPanel mPanelBoardGame;
 	JLabel mLabelStatus;
-	
+	JLabel mLabelScore;
 	// button
 	List<JButton> mListButton;
 	
@@ -72,15 +81,29 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 	Timer timer;
 	TimerTask task;
 	
+	//result
+	public static int userScore;
+	public static int computerScore;
+	
+	public AudioClip soundBg, soundWrong, soundRight;
+	
 	public GameView(GamePresenter controller) {
 		// TODO Auto-generated constructor stub
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
-		this.mController = controller;
+		this.mPresenter = controller;
 		
+		soundBg = getMusic("/res/River_Flows_In_You_-_Yiruma.wav");
+		soundWrong = getMusic("/res/Wrong-answer-sound-effect.wav");
+		soundRight = getMusic("/res/Correct-answer.wav");
 		
 		initView();
 	}
 
+	private static AudioClip getMusic(String path) {
+		return Applet.newAudioClip(Toolkit.getDefaultToolkit().getClass()
+				.getResource(path));
+	}
+	
 	@Override
 	public void initView() {
 		// TODO Auto-generated method stub
@@ -100,6 +123,7 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 		
 		mPanelBoardGame = new JPanel();
 		mLabelStatus = new JLabel();
+		mLabelScore = new JLabel();
 		
 		//button
 		mListButton = new ArrayList<>();
@@ -107,8 +131,8 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 		Container mContaint = getContentPane();
 		mContaint.setLayout(new BorderLayout());
 		
-		setTitle("Nhanh tay l\u1eb9 m\u1eaft");
-		
+//		setTitle("Nhanh tay l\u1eb9 m\u1eaft");
+		setTitle("Nhanh tay lẹ mắt");
 		// menu bar
 		{
 			//menu 1 : game
@@ -205,39 +229,31 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 			mPanelBoardGame.setBackground(Color.white);
 			
 			// JFormDesigner evaluation mark
-			mPanelBoardGame.setBorder(new CompoundBorder(new TitledBorder(new EmptyBorder(0, 0, 0, 0), "JavaIz.com tutorial game",
-					TitledBorder.CENTER, TitledBorder.BOTTOM, new Font("Dialog", Font.BOLD, 12),
-					Color.red), mPanelBoardGame.getBorder()));
-			mPanelBoardGame.addPropertyChangeListener(new PropertyChangeListener() {
-				
-				@Override
-				public void propertyChange(PropertyChangeEvent evt) {
-					// TODO Auto-generated method stub
-//					if ("border".equals(evt.getPropertyName())) throw new RuntimeException();
-				}
-			});
+//			mPanelBoardGame.setBorder(new CompoundBorder(new TitledBorder(new EmptyBorder(0, 0, 0, 0), "JavaIz.com tutorial game",
+//					TitledBorder.CENTER, TitledBorder.BOTTOM, new Font("Dialog", Font.BOLD, 12),
+//					Color.red), mPanelBoardGame.getBorder()));
+		
 			mPanelBoardGame.setLayout(new GridLayout(10,  10));
 			
 		}
 		mContaint.add(mPanelBoardGame, BorderLayout.CENTER);
 		
 		//==== status==========
-		currentTime = HARD_TIME;
 		LEVEL = HARD_TIME;
-		setTime(currentTime);
-		
+		setTime();
 		mContaint.add(mLabelStatus, BorderLayout.SOUTH);
-		pack();
-		setLocationRelativeTo(getOwner());
-		
+		mContaint.add(mLabelScore, BorderLayout.BEFORE_FIRST_LINE);
+
 	}
 
 	@Override
 	public void setNewGame(List<GameButton> buttonList) {
 		// TODO Auto-generated method stub
+		mPanelBoardGame.removeAll();
 		for (GameButton button : buttonList){
 			mPanelBoardGame.add(button);
 		}
+		setScore();
 		mPanelBoardGame.validate();
 	}
 
@@ -247,38 +263,72 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 		switch (e.getActionCommand()) {
 		case NEW_GAME:
 			STATUS = Status.NEW_GAME;
-			mPanelBoardGame.removeAll();
-			mController.setNewGame(10);
+			resetAllData();
+			mPresenter.setNewGame(10);
+			setTime();
 			break;
 		case PAUSE:
-			if (STATUS == Status.PAUSE)
+			if (STATUS == Status.PAUSE){
 				STATUS = Status.PLAYING;
-			else
+				resumeTimer();
+				mPresenter.pauseGame();
+			}else if (STATUS == Status.PLAYING){
 				STATUS = Status.PAUSE;
+				pauseTimer();
+				mPresenter.pauseGame();
+			}
 			
-			mController.pauseGame();
+			
 			break;
 		case CHEAT:
-			mController.cheat(COMPUTER);
+			if (STATUS == Status.PLAYING){
+				resetTimer();
+				mPresenter.cheat(USER);
+			}
 			break;
 			
 		case AUTO_PLAY:
-			mController.autoPlay();
+			if(STATUS == Status.PLAYING)
+				mPresenter.autoPlay();
 			break;
 		
 		case LEVEL_EASY:
-			LEVEL = EASY_TIME;
-			currentTime = EASY_TIME;
+			if (STATUS != Status.PLAYING) {
+				LEVEL = EASY_TIME;
+				setTime();
+			}
+			
+			if (STATUS == Status.PAUSE) {
+				STATUS = Status.NEW_GAME;
+				resetAllData();
+				mPresenter.setNewGame(10);
+			}
 			break;
 		
 		case LEVEL_MEDIUM:
-			LEVEL = MEDIUM_TIME;
-			currentTime = MEDIUM_TIME;
+			if (STATUS != Status.PLAYING) {
+				LEVEL = MEDIUM_TIME;
+				setTime();
+			}
+		
+			if (STATUS == Status.PAUSE) {
+				STATUS = Status.NEW_GAME;
+				resetAllData();
+				mPresenter.setNewGame(10);
+			}
 			break;
 		
 		case LEVEL_HARD:
-			LEVEL = HARD_TIME;
-			currentTime = HARD_TIME;
+			if (STATUS != Status.PLAYING) {
+				LEVEL = HARD_TIME;
+				setTime();
+			}
+			
+			if (STATUS == Status.PAUSE) {
+				STATUS = Status.NEW_GAME;
+				resetAllData();
+				mPresenter.setNewGame(10);
+			}
 			break;
 		case EXIT:
 			System.exit(0);
@@ -294,33 +344,45 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 	}
 
 	@Override
-	public void setTime(int level) {
+	public void setTime() {
 		// TODO Auto-generated method stub
-		if (level == EASY_TIME)
-			mLabelStatus.setText("Second: " + level);
+		currentTime = LEVEL;
+		if (currentTime == EASY_TIME)
+			mLabelStatus.setText("Level EASY: " + currentTime);
+		else if (currentTime == MEDIUM_TIME)
+			mLabelStatus.setText("Level Medium: 0" + currentTime);
 		else
-			mLabelStatus.setText("Second: 0" + level);
+			mLabelStatus.setText("Level Hard: 0" + currentTime);
 		
-		task = new TimerTask() {
-			
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				currentTime--;
-				mLabelStatus.setText("Second: 0" + currentTime);
-				
-				if (currentTime == 0){
-					mController.cheat(COMPUTER);
-					resetTimer(level);
-				}
-			}
-		};
 	}
 
 	@Override
 	public void resumeTimer() {
 		// TODO Auto-generated method stub
 		timer = new Timer();
+		task = new TimerTask() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				
+				if (LEVEL == EASY_TIME)
+					mLabelStatus.setText("Level EASY: " + currentTime);
+				else if (LEVEL == MEDIUM_TIME)
+					mLabelStatus.setText("Level Medium: 0" + currentTime);
+				else
+					mLabelStatus.setText("Level Hard: 0" + currentTime);
+				
+				if (currentTime == 0){
+					
+					mPresenter.cheat(COMPUTER);
+					
+					
+				}else{
+					currentTime--;
+				}
+			}
+		};
 		timer.schedule(task, 1000, 1000);
 		
 	}
@@ -328,17 +390,54 @@ public class GameView extends JFrame implements IGameView, ActionListener{
 	@Override
 	public void pauseTimer() {
 		// TODO Auto-generated method stub
-		
+		if (timer != null) {
+			System.out.println("Timer cancel");
+			timer.cancel();
+		}
 	}
 
 	@Override
-	public void resetTimer(int level) {
+	public void resetTimer() {
 		// TODO Auto-generated method stub
 		if (timer != null){
 			timer.cancel();
 		}
-		currentTime = level;
-		setTime(level);
+		currentTime = LEVEL;
 		resumeTimer();
 	}
+
+	@Override
+	public void finishGame() {
+		// TODO Auto-generated method stub
+		System.out.println("finish game");
+		STATUS = Status.END;
+		
+		if (userScore > computerScore)
+			JOptionPane.showMessageDialog(this, "You win \nYour socre : "
+					+ userScore + "/" + computerScore);
+		else if (userScore == computerScore)
+			JOptionPane.showMessageDialog(this, "You equal \nYour socre : "
+					+ userScore + "/" + computerScore);
+		else
+			JOptionPane.showMessageDialog(this, "You lose \nYour socre : "
+					+ userScore + "/" + computerScore);
+
+		resetAllData();
+		
+	}
+	
+	private void resetAllData(){
+		pauseTimer();
+		InGame = 0;
+		userScore = 0;
+		computerScore = 0;
+	}
+
+	@Override
+	public void setScore() {
+		// TODO Auto-generated method stub
+		mLabelScore.setText("Your Score : " + userScore + "\tComputer Score : " + computerScore);
+	}
+	
+	
 }

@@ -16,13 +16,17 @@ public interface IGameView {
 	
 	void setNewGame(List<GameButton> buttonList);
 	
-	void setTime(int level);
+	void setTime();
 	
 	void resumeTimer();
 	
 	void pauseTimer();
 	
-	void resetTimer(int level);
+	void resetTimer();
+	
+	void finishGame();
+	
+	void setScore();
 	
 	void notifySetChange();
 }

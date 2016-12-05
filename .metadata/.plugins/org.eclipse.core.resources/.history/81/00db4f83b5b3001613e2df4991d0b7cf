@@ -1,5 +1,0 @@
-package view;
-
-public enum Status {
-	START, PAUSE, STOP, AUTOPLAY, CHEAT;
-}

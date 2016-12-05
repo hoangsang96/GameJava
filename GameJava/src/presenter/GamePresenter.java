@@ -8,6 +8,7 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
 import base.MyCallBack;
@@ -84,6 +85,10 @@ public class GamePresenter implements IGamePresenter{
 							// TODO Auto-generated method stub
 							if (mView.STATUS == Status.NEW_GAME) {
 								startGame();	
+							}else if (mView.STATUS == Status.PAUSE){
+								mView.STATUS = Status.PLAYING;
+								mView.resumeTimer();
+								pauseGame();
 							}else{
 								handleClickButton(button);
 							}
@@ -112,23 +117,20 @@ public class GamePresenter implements IGamePresenter{
 		System.out.println("Button click " + inGame);
 	
 		if (mView.InGame+1 == inGame){
+			button.isUserClicked = true;
+			mView.InGame = inGame;
+			button.setBackground(Color.GREEN);
+			mView.userScore++;
+			mView.setScore();
+			mView.soundRight.play();
+			mView.notifySetChange();
+			
+			mView.resetTimer();
 			if (inGame == 100) {
-				finishGame();
-				
-			}else{
-				mView.InGame = inGame;
-				button.setBackground(Color.GREEN);
-				mView.notifySetChange();
-		
+				mView.finishGame();
 			}
 			
-			mView.resetTimer(mView.LEVEL);
 		}
-	}
-	
-	private void finishGame() {
-		// TODO Auto-generated method stub
-		System.out.println("You won");
 	}
 
 	@Override
@@ -153,9 +155,12 @@ public class GamePresenter implements IGamePresenter{
 		}else{
 			for (int i = 0; i < listButons.size(); i++){
 				GameButton button = listButons.get(i);
-				if (Integer.parseInt(button.getText()) <= mView.InGame)
-					button.setBackground(Color.GREEN);
-				else
+				if (Integer.parseInt(button.getText()) <= mView.InGame){
+					if (button.isUserClicked)
+						button.setBackground(Color.GREEN);
+					else
+						button.setBackground(Color.red);
+				}else
 					button.setBackground(Color.WHITE);
 			}
 		}
@@ -168,14 +173,27 @@ public class GamePresenter implements IGamePresenter{
 		// TODO Auto-generated method stub
 		for (GameButton button : listButons){
 			if (Integer.parseInt(button.getText()) == mView.InGame+1){
-				if (isUser)
-					button.setBackground(Color.green);
-				else
+				if (isUser){
+					button.setBackground(Color.GREEN);
+					mView.userScore++;
+					button.isUserClicked = true;
+					mView.soundRight.play();
+				}else{
 					button.setBackground(Color.red);
-				
+					button.isUserClicked = false;
+					mView.computerScore++;
+					mView.soundWrong.play();
+				}
+		
 				mView.InGame++;
-				mView.notifySetChange();
-				
+				mView.setScore();
+				mView.resetTimer();
+				if (mView.InGame == 100){
+					System.out.println("FINISH");
+					mView.finishGame();
+				}else{
+					mView.notifySetChange();
+				}
 				return;
 			}
 		}
@@ -186,17 +204,15 @@ public class GamePresenter implements IGamePresenter{
 		// TODO Auto-generated method stub
 		for (GameButton button : listButons){
 			if (Integer.parseInt(button.getText()) > mView.InGame){
-				button.setBackground(Color.RED);
+				button.setBackground(Color.GREEN);
+				button.isUserClicked = true;	
+				mView.userScore++;
+				
 			}
 		}
+		mView.setScore();
 		mView.InGame = 100;
 		mView.notifySetChange();
-		win();
-	}
-
-	@Override
-	public void win() {
-		// TODO Auto-generated method stub
-		System.out.println("You win !");
+		mView.finishGame();
 	}
 }

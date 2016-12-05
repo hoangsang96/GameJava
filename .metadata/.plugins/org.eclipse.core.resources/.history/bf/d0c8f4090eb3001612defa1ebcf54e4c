@@ -1,7 +1,0 @@
-package view;
-
-import java.util.List;
-
-public interface IGameView {
-	void setNewGame(List<Integer> solutionsList);
-}

@@ -11,5 +11,4 @@ public interface IGamePresenter {
 	
 	void autoPlay();
 	
-	void win();
 }
